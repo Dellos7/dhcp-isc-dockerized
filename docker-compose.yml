@@ -1,0 +1,38 @@
+version: "3.1"
+services:
+  isc-dhcp:
+    build: .
+    #tty: true # No parar el contenedor
+    volumes:
+      - ./config/:/etc/dhcp/
+    networks: # Indicamos que el contenedor se incluirá en la siguiente red
+      static-network:
+        ipv4_address: 192.168.35.2 # IP específica que le asignaremos
+  ubuntu:
+    cap_add:
+     - NET_ADMIN # Sin esto, no se pueden ejecutar comandos como "ifup", "ifdown"...
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
+    #tty: true # No parar el contenedor
+    networks: # Indicamos que el contenedor se incluirá en la siguiente red
+      static-network:
+        ipv4_address: 192.168.35.3 # IP específica que le asignaremos --> después lo configuramos con el DHCP
+    depends_on:
+      - isc-dhcp
+  ubuntu2:
+    cap_add:
+      - NET_ADMIN # Sin esto, no se pueden ejecutar comandos como "ifup", "ifdown"...
+    image: isc-dhcp_ubuntu:latest
+    networks:
+      - static-network
+    depends_on:
+      - isc-dhcp
+# Creamos una red llamada "static-network"
+networks:
+  static-network:
+    ipam:
+      config:
+        - subnet: 192.168.35.0/24
+          #docker-compose v3+ do not use ip_range
+          #ip_range: 192.168.36.0/24
